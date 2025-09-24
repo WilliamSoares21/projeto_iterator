@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+    <meta charset="utf-8"/>
+    <title>Simulador Iterator (MyArrayList) — com remove()</title>
+    <style>
+        body { font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; padding: 18px; background:#f6f8fa; color:#222; }
+        h1 { font-size:20px; margin:0 0 12px 0; }
+        .row { display:flex; gap:12px; align-items:center; margin:12px 0; flex-wrap:wrap; }
+        .box { display:inline-flex; align-items:center; justify-content:center; width:56px; height:56px; border-radius:8px; background:#fff; box-shadow: 0 1px 3px rgba(16,24,40,0.08); border:1px solid #e6e9ee; font-weight:600; }
+        .box.cursor { box-shadow: 0 6px 18px rgba(34,139,230,0.14); transform: translateY(-6px); border-color: #5aa9ff; }
+        .box.removed { opacity:0.18; text-decoration:line-through; }
+        #list { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+        button { padding:8px 12px; border-radius:8px; border:1px solid #d6dbe6; background:white; cursor:pointer; font-weight:600; }
+        button:active{ transform: translateY(1px); }
+        button.primary { background:#2274e1; color:white; border-color:#1c5ec0; }
+        .info { background:#fff; padding:10px; border-radius:8px; border:1px solid #e6e9ee; box-shadow: 0 1px 3px rgba(16,24,40,0.04); }
+        .small { font-size:13px; color:#555; }
+        .kbd { background:#f1f5f9; border-radius:6px; padding:2px 6px; font-family:monospace; }
+        input[type="text"]{ padding:8px 10px; border-radius:8px; border:1px solid #d6dbe6; }
+        .controls { display:flex; gap:8px; flex-wrap:wrap; }
+    </style>
+</head>
+<body>
+<h1>Simulador do Iterator (MyArrayList) — com remove()</h1>
+<div class="row">
+    <div class="info">
+        <div><strong>Estado do Iterador</strong></div>
+        <div class="small">cursor: <span id="cursor">0</span> — lastRet: <span id="lastRet">-1</span> — size: <span id="size">0</span></div>
+    </div>
+    <div class="info">
+        <div><strong>Mensagens</strong></div>
+        <div id="msg" class="small">Clique em <span class="kbd">Next()</span> para avançar.</div>
+    </div>
+</div>
+
+<div id="list" aria-live="polite"></div>
+
+<div class="row controls" style="margin-top:14px;">
+    <button id="nextBtn" class="primary">Next()</button>
+    <button id="removeBtn">remove()</button>
+    <button id="resetBtn">Reset</button>
+
+    <input type="text" id="addInput" placeholder="Novo item (ex: X)" />
+    <button id="addBtn">Add</button>
+</div>
+
+<div style="margin-top:12px" class="small">
+    <strong>Observações:</strong> o botão <em>remove()</em> remove o último item retornado por <em>next()</em>. Chamadas inválidas disparam mensagens de erro como na implementação Java.
+</div>
+
+<script>
+    // Representação interna (similar ao MyArrayList<T>)
+    let elements = ['A','B','C','D'];
+    let size = elements.length;
+
+    // Estado do iterator (como MyArrayListIterator)
+    let cursor = 0;
+    let lastRet = -1; // -1 significa "nenhum ainda"
+
+    const listDiv = document.getElementById('list');
+    const cursorSpan = document.getElementById('cursor');
+    const lastRetSpan = document.getElementById('lastRet');
+    const sizeSpan = document.getElementById('size');
+    const msg = document.getElementById('msg');
+
+    function render() {
+        listDiv.innerHTML = '';
+        for (let i = 0; i < elements.length; i++) {
+            const box = document.createElement('div');
+            box.className = 'box';
+            box.textContent = elements[i];
+            if (i === cursor && cursor < size) box.classList.add('cursor');
+            if (i >= size) { // posições além do size são "vazias" (não mostradas)
+                box.classList.add('removed');
+            }
+            listDiv.appendChild(box);
+        }
+        cursorSpan.textContent = cursor;
+        lastRetSpan.textContent = lastRet;
+        sizeSpan.textContent = size;
+    }
+
+    function hasNext() {
+        return cursor < size;
+    }
+
+    function nextOp() {
+        if (!hasNext()) {
+            msg.textContent = 'NoSuchElementException — não há mais elementos.';
+            return;
+        }
+        lastRet = cursor;
+        const e = elements[cursor];
+        cursor++;
+        msg.textContent = 'next() -> ' + e;
+        render();
+    }
+
+    function removeOp() {
+        if (lastRet < 0) {
+            msg.textContent = 'IllegalStateException — remove() só após next().';
+            return;
+        }
+        // Simula list.remove(lastRet) + ajuste do cursor
+        // Faz o deslocamento (como System.arraycopy)
+        const index = lastRet;
+        const moved = size - index - 1;
+        if (moved > 0) {
+            for (let i = 0; i < moved; i++) {
+                elements[index + i] = elements[index + i + 1];
+            }
+        }
+        // "limpa" o último
+        elements[size - 1] = null;
+        size--;
+        // Ajusta cursor e lastRet
+        cursor = index;
+        lastRet = -1;
+        msg.textContent = 'remove() -> elemento removido na posição ' + index + '.';
+        render();
+    }
+
+    document.getElementById('nextBtn').addEventListener('click', nextOp);
+    document.getElementById('removeBtn').addEventListener('click', removeOp);
+    document.getElementById('resetBtn').addEventListener('click', ()=>{
+        // reset lista e iterator
+        elements = ['A','B','C','D'];
+        size = elements.length;
+        cursor = 0;
+        lastRet = -1;
+        msg.textContent = 'Reset: lista restaurada.';
+        render();
+    });
+    document.getElementById('addBtn').addEventListener('click', ()=>{
+        const val = document.getElementById('addInput').value.trim();
+        if (!val) { msg.textContent = 'Informe um valor para adicionar.'; return; }
+        // add similar ao ensureCapacity + elements[size++] = item
+        if (elements.length === size) {
+            // dobra o "array"
+            const newArr = new Array(elements.length * 2);
+            for (let i = 0; i < elements.length; i++) newArr[i] = elements[i];
+            elements = newArr;
+        }
+        elements[size] = val;
+        size++;
+        msg.textContent = 'add(' + val + ') executado.';
+        render();
+        document.getElementById('addInput').value = '';
+    });
+
+    // Inicial render
+    render();
+</script>
+</body>
+</html>
