@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+    <meta charset="utf-8"/>
+    <title>Iterator Animation</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; }
+        .box { display:inline-block; width:50px; height:50px; line-height:50px; text-align:center; border:1px solid #333; margin:6px; }
+        .highlight { box-shadow: 0 0 10px 3px rgba(0,150,200,0.3); transform: scale(1.08); }
+        #controls { margin-top: 16px; }
+    </style>
+</head>
+<body>
+<h3>Visualização: cursor do Iterator</h3>
+<div id="list"></div>
+<div id="status"></div>
+<div id="controls">
+    <button id="next">Next()</button>
+    <button id="reset">Reset</button>
+</div>
+<script>
+    const items = ['A','B','C','D'];
+    const listDiv = document.getElementById('list');
+    const status = document.getElementById('status');
+    let cursor = 0;
+    function render(){
+        listDiv.innerHTML = '';
+        items.forEach((v,i)=>{
+            const d = document.createElement('div');
+            d.className = 'box';
+            if(i === cursor) d.className += ' highlight';
+            d.textContent = v;
+            listDiv.appendChild(d);
+        });
+        status.textContent = cursor < items.length ? `cursor = ${cursor}, hasNext() = true` : 'hasNext() = false';
+    }
+    document.getElementById('next').onclick = ()=>{
+        if(cursor < items.length){
+            alert('next() -> ' + items[cursor]);
+            cursor++;
+            render();
+        } else {
+            alert('NoSuchElementException (não há mais elementos)');
+        }
+    };
+    document.getElementById('reset').onclick = ()=>{ cursor=0; render(); };
+    render();
+</script>
+</body>
+</html>
